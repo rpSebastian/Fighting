@@ -1,0 +1,19 @@
+dist: bionic
+language: python
+python: 3.8
+
+jobs:
+  include:
+    - name: "tests"
+      python: 3.8
+      install: pip install -r requirements-dev.txt && python setup.py develop
+      script: pytest -vv
+    # - name: "flake8"
+    #   install: pip install $(grep flake8 requirements-dev.txt)
+    #   script: flake8
+    - name: "black"
+      install: pip install $(grep black requirements-dev.txt)
+      script: black --check --diff malib
+    - name: "isort"
+      install: pip install $(grep isort requirements-dev.txt)
+      script: isort --check-only --diff --recursive malib
