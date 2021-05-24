@@ -37,7 +37,7 @@ setup(
     packages=find_packages(exclude=("tests*", "docs*", "examples*")),
     zip_safe=True,
     install_requires=requirements,
-    extras_require=extras,
+    # extras_require=extras,
     classifiers=[
         "Programming Language :: Python :: 3",
     ],
