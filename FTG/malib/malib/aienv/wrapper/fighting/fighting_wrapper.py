@@ -22,29 +22,31 @@ class AWrapper(ActionWrapper):
 class FrameLimitWrapper(BaseWrapper):
     def __init__(self, env):
         super().__init__(env)
-        self.frame_num = 0
-        self.max_frame = 3000
+        self.episode_reward = 0
 
     def reset(self):
-        self.frame_num = 0
+        self.episode_reward = 0
         return self.env.reset()
 
     def step(self, action):
         s, r, d, i = self.env.step(action)
-        # i["episode_reward"] = self.frame_num
-        # if d:
-        #     win_result = {}
-        #     if self.frame_num > 195:
-        #         win_result["p0"] = 1
-        #     elif self.frame_num > 80:
-        #         win_result["p0"] = 0
-        #     else:
-        #         win_result["p0"] = -1
+        own_hp = i[0]
+        opp_hp = i[1]
+        self.episode_reward += r
+        info = {}
+        info["own_hp"] = own_hp
+        info["opp_hp"] = opp_hp
+        info["episode_reward"] = self.episode_reward
+        info["hp_diff"] = own_hp - opp_hp
+        if d:
+            win_result = {}
+            if own_hp > opp_hp:
+                win_result["p0"] = 1
+            elif own_hp == opp_hp:
+                win_result["p0"] = 0
+            else:
+                win_result["p0"] = -1
+            info["win_result"] = win_result
 
-        #     i["win_result"] = win_result
-
-        # i["other"] = None
-        # if self.frame_num >= self.max_frame:
-        #     d = True
-        # self.frame_num += 1
-        return s, r, d, i
+        info["other"] = None
+        return s, r, d, info

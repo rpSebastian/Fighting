@@ -222,7 +222,7 @@ class FightingiceEnv(gym.Env):
         self.pipe.send(["step", action])
         if self.pipe.poll(30):
             new_obs, reward, done, info = self.pipe.recv()
-            print("current hp: own {} vs opp {}".format(info[0], info[1]))
+            # print("current hp: own {} vs opp {}".format(info[0], info[1]))
             # you can close the print functional to accelerate training speed
         else:
             new_obs, reward, done, info = None, 0, True, None
