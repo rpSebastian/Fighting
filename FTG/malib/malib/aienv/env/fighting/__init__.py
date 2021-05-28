@@ -1,0 +1,1 @@
+from .fighting import Fighting
