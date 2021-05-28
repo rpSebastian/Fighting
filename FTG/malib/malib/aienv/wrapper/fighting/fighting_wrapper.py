@@ -42,10 +42,8 @@ class FrameLimitWrapper(BaseWrapper):
             win_result = {}
             if own_hp > opp_hp:
                 win_result["p0"] = 1
-            elif own_hp == opp_hp:
-                win_result["p0"] = 0
             else:
-                win_result["p0"] = -1
+                win_result["p0"] = 0
             info["win_result"] = win_result
 
         info["other"] = None

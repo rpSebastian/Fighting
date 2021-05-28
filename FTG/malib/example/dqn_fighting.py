@@ -35,16 +35,16 @@ data_config = dict(
 )
 eval_config = dict(
     config_name="eval_config",
-    eval_game_number=1,
-    total_episode_number=1,
+    eval_game_number=10,
+    total_episode_number=100,
     ray_mode="sync",
     eval_mode="env",  # env: 单个player在env中测试， dynamic：挑选对手，opponent_id:指定对手
     env_name="fighting",
     players=["p0"],
-    evaluator_num=5,
+    evaluator_num=2,
 )
 if torch.cuda.is_available():
-    game_number = 20
+    game_number = 10
 else:
     game_number = 2
 
@@ -159,6 +159,8 @@ class MyLearner(Learner):
 
 
         self.logger.add_scalar("p0/reward", mean_reward1, self.learn_step_number)
+        self.logger.add_scalar("p0/hp_diff", mean_hp_diff, self.learn_step_number)
+        self.logger.add_scalar("p0/win_rate", win_rate, self.learn_step_number)
         t4 = time.time()
 
         logger.info(
@@ -177,9 +179,9 @@ if __name__ == "__main__":
     league = league_cls(league_config, register_handle=register_handle)
 
     learner = MyLearner(config, register_handle=register_handle)
-    for i in range(5000):
+    for i in range(50000):
         learner.step()
-        if i % 3 == 0:
+        if i % 20 == 0:
             p = learner.get_training_player()
             league.add_player.remote(p)
     time.sleep(100000)
