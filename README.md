@@ -15,3 +15,9 @@ cd FTG/malib && pip install -e .
 ### Test env
 
 xvfb-run -s "-screen 0 600x400x24" python malib/example/test_env.py
+
+### Train DQN
+
+xvfb-run -s "-screen 0 600x400x24" python malib/example/dqn_fighting.py
+
+tensorboard --logdir ./logs --reload_multifile True

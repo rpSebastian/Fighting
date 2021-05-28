@@ -1,7 +1,8 @@
 from malib import makeenv
 import random
 env = makeenv("fighting")
-
+print(env.observation_space)
+print(env.action_space)
 while True:
     obs = env.reset()
     reward, done, info = 0, False, None
