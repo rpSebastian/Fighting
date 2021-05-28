@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import datetime
 import os
-
 from setuptools import find_packages, setup
 
-readme = open("README.md").read()
+# readme = open("README.md").read()
+readme = "x"
 
 # TODO: automate version
 VERSION = "0.0.1"

@@ -2,8 +2,8 @@ import random
 from fightingice_env import FightingiceEnv
 
 if __name__ == '__main__':
-
     env = FightingiceEnv()
+    # env = FightingiceEnv(port=4242)
     # for windows user, port parameter is necessary because port_for library does not work in windows
     # for linux user, you can omit port parameter, just let env = FightingiceEnv()
 
@@ -11,6 +11,7 @@ if __name__ == '__main__':
     # this mode let two players have infinite hp, their hp in round can be negative
     # you can close the window display functional by using the following mode
     env_args = ["--fastmode", "--disable-window", "--grey-bg", "--inverted-player", "1", "--mute"]
+
 
     while True:
         obs = env.reset(env_args=env_args)
@@ -21,7 +22,6 @@ if __name__ == '__main__':
             # TODO: or you can design with your RL algorithm to choose action [act] according to game state [obs]
             new_obs, reward, done, info = env.step(act)
             ep_len += 1
-            print(ep_len, reward)
             if not done:
                 # TODO: (main part) learn with data (obs, act, reward, new_obs)
                 # suggested discount factor value: gamma in [0.9, 0.95]

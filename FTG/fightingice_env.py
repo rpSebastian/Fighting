@@ -113,6 +113,7 @@ class FightingiceEnv(gym.Env):
             self.java_env = subprocess.Popen(["java", "-Xms1024m", "-Xmx1024m", "-cp", self.start_up_str, "Main",
                                               "--port", str(self.port), "--py4j"] + env_args, stdout=devnull, stderr=devnull)
         elif self.system_name == "linux":
+            print(self.start_up_str)
             self.java_env = subprocess.Popen(["java", "-cp", self.start_up_str, "Main", "--port", str(self.port),
                                               "--py4j"] + env_args, stdout=devnull, stderr=devnull)
         elif self.system_name == "macos":
@@ -151,7 +152,7 @@ class FightingiceEnv(gym.Env):
         if random.random() > 0.5:
             self.p1, self.p2 = self.p2, self.p1
             self.p1_name, self.p2_name = self.p2_name, self.p1_name
-        self.character = 'Zen'
+        self.character = 'ZEN'
         self.game_to_start = self.manager.createGame(self.character, self.character,
                                                      self.p1_name, self.p2_name, self.freq_restart_java)
         print("start fightingice env: {} vs {} in {}".format(self.p1_name, self.p2_name, self.character))

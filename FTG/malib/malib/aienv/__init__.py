@@ -87,3 +87,18 @@ register(
 """
 register(id="leduc_holdem", params={"raw_env": "rlcard:LeducHoldem"})
 register(id="mahjong", params={"raw_env": "rlcard:MahJong"})
+
+"""
+Fighting
+"""
+register(
+    id="fighting",
+    params={
+        "raw_env": "fighting:Fighting",
+        "wrapper": [
+            "fighting:ObsWrapper",
+            "fighting:AWrapper",
+            "fighting:FrameLimitWrapper",
+        ],
+    },
+)
