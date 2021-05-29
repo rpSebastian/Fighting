@@ -207,14 +207,14 @@ class BasePlayer(object):
         """
         # TODO:是否需要 定制 agent_id
         weights = {}
-        for model_id, model in self.mocel_dict.items():
+        for model_id, model in self.model_dict.items():
             weights[model_id] = model.get_weights()
         return weights
 
     def set_player_weights(self, player_weights):
         for m_id, m_w in player_weights.items():
             assert m_id in self.model_dict
-            self.model_dict[w_id].set_weights(m_w)
+            self.model_dict[m_id].set_weights(m_w)
 
     def update_player_name(self, p_name, p_long_name):
         """update the player info

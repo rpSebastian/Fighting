@@ -23,13 +23,24 @@ class FrameLimitWrapper(BaseWrapper):
     def __init__(self, env):
         super().__init__(env)
         self.episode_reward = 0
+        self.step_num = 0
+        self.last_i = None
 
     def reset(self):
         self.episode_reward = 0
+        self.step_num = 0
+        self.last_i = None
         return self.env.reset()
 
     def step(self, action):
         s, r, d, i = self.env.step(action)
+        if i is None:
+            i = self.last_i
+        # Java 异常终止， d=True， i=None
+        self.last_i = i
+        self.step_num += 1
+        # if self.step_num % 10 == 0:
+            # d = True
         own_hp = i[0]
         opp_hp = i[1]
         self.episode_reward += r
