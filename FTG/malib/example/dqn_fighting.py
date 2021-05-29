@@ -26,17 +26,17 @@ data_config = dict(
         player_data=["feature", "obs", "model_out", "action"],
         other_data=["game_data", "reward"],
     ),
-    train_data_num=256,
+    train_data_num=4096,
     tra_len=1,
     batch_size=128,
     data_async=False,
-    data_capacity=2000,
+    data_capacity=200000,
     data_sample_mode="USWR",
 )
 eval_config = dict(
     config_name="eval_config",
-    eval_game_number=10,
-    total_episode_number=100,
+    eval_game_number=5,
+    total_episode_number=5,
     ray_mode="sync",
     eval_mode="env",  # env: 单个player在env中测试， dynamic：挑选对手，opponent_id:指定对手
     env_name="fighting",
@@ -44,7 +44,7 @@ eval_config = dict(
     evaluator_num=2,
 )
 if torch.cuda.is_available():
-    game_number = 10
+    game_number = 20
 else:
     game_number = 2
 
@@ -70,7 +70,7 @@ trainer_config = dict(
         lr=0.001,
         target_model_update_iter=30,
         EPSILON=0.9,
-        GAMMA=0.9,
+        GAMMA=0.99,
         # training_procedure= train_on_batch,
     ),
 )
@@ -83,7 +83,7 @@ player_config = dict(
         action_config=dict(
             action_name="greedy_action",
             epsilon=1.0,
-            episode_count=100000,
+            episode_count=5000,
         ),
         feature_config="tensor_feature",
     ),
@@ -137,11 +137,11 @@ class MyLearner(Learner):
         self.build_games()
         self.build_trainers()
         self.init_games_weights()
-        # self.start_data_thread()
+        self.start_data_thread()
 
     def learning_procedure(self, learner=None):
         t0 = time.time()
-        data = self.ask_for_data(min_episode_count=1)
+        data = self.ask_for_data(min_episode_count=0)
         t1 = time.time()
         result = self.learn_on_data(data)
         t2 = time.time()
@@ -162,7 +162,7 @@ class MyLearner(Learner):
         self.logger.add_scalar("p0/hp_diff", mean_hp_diff, self.learn_step_number)
         self.logger.add_scalar("p0/win_rate", win_rate, self.learn_step_number)
         t4 = time.time()
-
+        logger.info("{} {} {} ".format(t1 - t0, t2 - t1, t3 - t2))
         logger.info(
             [
                 "learner step number:{},train reward:{}, hp diff:{}, win rate: {}".format(
@@ -179,9 +179,9 @@ if __name__ == "__main__":
     league = league_cls(league_config, register_handle=register_handle)
 
     learner = MyLearner(config, register_handle=register_handle)
-    for i in range(50000):
+    for i in range(50000000):
         learner.step()
-        if i % 20 == 0:
+        if i % 5 == 0:
             p = learner.get_training_player()
             league.add_player.remote(p)
     time.sleep(100000)
