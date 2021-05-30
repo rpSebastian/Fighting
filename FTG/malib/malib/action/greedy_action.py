@@ -43,7 +43,7 @@ class GreedyAction(Action):
                 action_index = torch.argmax(prob)
                 action = action_index.item()
             self.epsilon -= 1.0 / self.episode_count
-            self.epsilon = max(0.01, self.epsilon)
+            self.epsilon = max(0.1, self.epsilon)
             action_dict[agent_id] = action
         player_data_dict = {}
         player_data_dict["action"] = action_dict
