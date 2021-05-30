@@ -70,7 +70,7 @@ trainer_config = dict(
         lr=0.001,
         target_model_update_iter=30,
         EPSILON=0.9,
-        GAMMA=0.99,
+        GAMMA=0.9,
         # training_procedure= train_on_batch,
     ),
 )
