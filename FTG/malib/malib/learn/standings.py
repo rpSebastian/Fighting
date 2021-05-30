@@ -18,6 +18,8 @@ class Standings(object):
             self.score = collections.defaultdict(lambda: 0)
         if "reward" in self.standings_mode:
             self.reward = collections.defaultdict(lambda: 0)
+        if "hpdiff" in self.standings_mode:
+            self.hp_diff = collections.defaultdict(lambda: 0)    
         if "winrate" in self.standings_mode:
             self.WR = collections.defaultdict(
                 lambda: collections.defaultdict(lambda: 0)
@@ -44,7 +46,14 @@ class Standings(object):
             self.reward[player_info["player_name"]] = mean_r
             tb_name = player_info["player_id"] + "/eval_reward"
             self.logger.add_scalar(tb_name, mean_r, player_info["learn_step_number"])
-
+        
+        if "hpdiff" in self.standings_mode:
+            r_list = [i["hp_diff"] for i in result]
+            mean_r = np.mean(r_list)
+            self.reward[player_info["player_name"]] = mean_r
+            tb_name = player_info["player_id"] + "/eval_hp_diff"
+            self.logger.add_scalar(tb_name, mean_r, player_info["learn_step_number"])
+        
         if "winrate" in self.standings_mode:
             if opponent_info is None:
                 player_win_count = 0
@@ -72,6 +81,8 @@ class Standings(object):
         result = {}
         if "reward" in self.standings_mode:
             result["reward"] = self.reward
+        if "hpdiff" in self.standings_mode:
+            result["hp_diff"] = self.reward
         if "winrate" in self.standings_mode:
             res = {}
             res["win"] = self.win
