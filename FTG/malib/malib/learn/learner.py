@@ -505,6 +505,9 @@ class Learner(object):
         """
         return self.player.get_player_weights()
 
+    def get_epsilon(self):
+        return ray.get(self.vector_game.remote_games[1].get_epsilon.remote())
+
     @classmethod
     def as_remote(
         cls,

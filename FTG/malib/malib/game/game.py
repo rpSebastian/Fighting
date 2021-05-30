@@ -380,6 +380,9 @@ class Game(object):
                 agent_id,
             )
 
+    def get_epsilon(self):
+        return list(self.players.values())[0].action.epsilon
+
     def reset_env(self, env_id=None, env=None):
         """change the env in game
 
