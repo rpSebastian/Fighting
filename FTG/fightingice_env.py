@@ -113,7 +113,8 @@ class FightingiceEnv(gym.Env):
             self.java_env = subprocess.Popen(["java", "-Xms1024m", "-Xmx1024m", "-cp", self.start_up_str, "Main",
                                               "--port", str(self.port), "--py4j"] + env_args, stdout=devnull, stderr=devnull)
         elif self.system_name == "linux":
-            print(self.start_up_str)
+            print(["java", "-cp", self.start_up_str, "Main", "--port", str(self.port),
+                                              "--py4j"] + env_args)
             self.java_env = subprocess.Popen(["java", "-cp", self.start_up_str, "Main", "--port", str(self.port),
                                               "--py4j"] + env_args, stdout=devnull, stderr=devnull)
         elif self.system_name == "macos":

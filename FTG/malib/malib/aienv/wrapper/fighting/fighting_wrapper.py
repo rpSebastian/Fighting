@@ -49,6 +49,9 @@ class FrameLimitWrapper(BaseWrapper):
         info["opp_hp"] = opp_hp
         info["episode_reward"] = self.episode_reward
         info["hp_diff"] = own_hp - opp_hp
+        info["step_num"] = self.step_num
+        if self.step_num % 20 == 0:
+            print("step", self.step_num, "own hp: ", own_hp, "opp_hp", opp_hp, )
         if d:
             win_result = {}
             if own_hp > opp_hp:

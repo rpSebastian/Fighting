@@ -1,6 +1,7 @@
 import random
 import sys
 import time
+import pickle
 
 import numpy as np
 import ray
@@ -26,16 +27,16 @@ data_config = dict(
         player_data=["feature", "obs", "model_out", "action"],
         other_data=["game_data", "reward"],
     ),
-    train_data_num=40960,
+    train_data_num=128,
     tra_len=1,
-    batch_size=1024,
+    batch_size=128,
     data_async=False,
     data_capacity=200000,
     data_sample_mode="USWR",
 )
 eval_config = dict(
     config_name="eval_config",
-    eval_game_number=10,
+    eval_game_number=1,
     total_episode_number=100,
     ray_mode="sync",
     eval_mode="env",  # env: 单个player在env中测试， dynamic：挑选对手，opponent_id:指定对手
@@ -44,9 +45,9 @@ eval_config = dict(
     evaluator_num=1,
 )
 if torch.cuda.is_available():
-    game_number = 20
+    game_number = 1
 else:
-    game_number = 2
+    game_number = 1
 
 learner_config = dict(
     config_name="learner_config",
@@ -138,7 +139,20 @@ class MyLearner(Learner):
         self.build_games()
         self.build_trainers()
         self.init_games_weights()
-        self.start_data_thread()
+        # self.start_data_thread()
+        self.init_games_weights_from_file()
+
+    def init_games_weights_from_file(self):
+        weights_path = "logs/league/p0_0_2021-05-30-20-44-26.pth"
+        with open(weights_path, "rb") as f:
+            info = pickle.load(f)
+            weights = info["m0"]
+        result = {}
+        result["train_result"] = {}
+        result["train_result"]["weights"] = weights
+        result["player_id"] = "p0"
+        result["model_id"] = "m0"
+        self.sync_weights(result)
 
     def learning_procedure(self, learner=None):
         t0 = time.time()
@@ -146,7 +160,6 @@ class MyLearner(Learner):
         t1 = time.time()
         result = self.learn_on_data(data)
         t2 = time.time()
-
         self.sync_weights(result)
         t3 = time.time()
         game_last_info = self.get_game_info()
@@ -164,6 +177,8 @@ class MyLearner(Learner):
         self.logger.add_scalar("p0/win_rate", win_rate, self.learn_step_number)
         t4 = time.time()
         logger.info("{} {} {} ".format(t1 - t0, t2 - t1, t3 - t2))
+        g0 = game_last_info[0]["info"]
+        logger.info("step_num: {} own hp: {} opp hp: {}".format(g0["step_num"], g0["own_hp"], g0["opp_hp"]))
         logger.info(
             [
                 "learner step number:{},train reward:{}, hp diff:{}, win rate: {}, epsilon: {}".format(
@@ -180,9 +195,11 @@ if __name__ == "__main__":
     league = league_cls(league_config, register_handle=register_handle)
 
     learner = MyLearner(config, register_handle=register_handle)
-    for i in range(50000000):
-        learner.step()
-        if i % 20 == 0:
-            p = learner.get_training_player()
-            league.add_player.remote(p)
+    p = learner.get_training_player()
+    league.add_player.remote(p)
+    # for i in range(50000000):
+    #     learner.step()
+    #     if i % 1 == 0:
+    #         p = learner.get_training_player()
+    #         league.add_player.remote(p)
     time.sleep(100000)

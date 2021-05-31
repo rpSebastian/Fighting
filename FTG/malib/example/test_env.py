@@ -10,7 +10,8 @@ while True:
     step_num = 0
     while not done:
         step_num += 1
-        act = random.randint(0, 10)
+        act = random.randint(0, 39)
+        print(act)
         # TODO: or you can design with your RL algorithm to choose action [act] according to  state [obs]
         new_obs, reward, done, info = env.step(dict(p0=act))
         print("step: {} current hp: own {} vs opp {}, reward {}, episode reward {:.2f}".format(step_num, info["own_hp"], info["opp_hp"], reward, info["episode_reward"]))

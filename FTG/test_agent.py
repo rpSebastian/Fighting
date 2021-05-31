@@ -55,6 +55,7 @@ def run_episode(env, env_args, agent):
     while True:
         step_num += 1
         a = agent.action(o)
+        print(a)
         o, r, d, i = env.step(a)
         if d:
             break
@@ -76,7 +77,10 @@ def run_episode(env, env_args, agent):
 
 def test():
     # weights_path = "logs/league/p0_389_2021-05-29-23-45-58.pth"
-    weights_path = "logs/league/p0_83_2021-05-30-10-06-39.pth"
+    # weights_path = "logs/league/p0_83_2021-05-30-10-06-39.pth"
+    # weights_path = "logs/league/p0_36_2021-05-30-17-06-14.pth"
+    # weights_path = "logs/league/p0_41_2021-05-30-17-45-03.pth"
+    weights_path = "logs/league/p0_0_2021-05-30-20-44-26.pth"
     agent = Agent(weights_path)
     env = FightingiceEnv(port=4232)
     env_args = ["--fastmode", "--disable-window", "--grey-bg", "--inverted-player", "1", "--mute"]
