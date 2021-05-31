@@ -1,1 +1,0 @@
-from .gfootball import GFootBall

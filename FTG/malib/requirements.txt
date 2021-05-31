@@ -1,7 +1,0 @@
-gym
-opencv-python
-pytest
-ray
-rlcard
-tensorboard
-torch
