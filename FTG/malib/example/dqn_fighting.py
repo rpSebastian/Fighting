@@ -27,16 +27,16 @@ data_config = dict(
         player_data=["feature", "obs", "model_out", "action"],
         other_data=["game_data", "reward"],
     ),
-    train_data_num=128,
+    train_data_num=40960,
     tra_len=1,
-    batch_size=128,
+    batch_size=1024,
     data_async=False,
     data_capacity=200000,
     data_sample_mode="USWR",
 )
 eval_config = dict(
     config_name="eval_config",
-    eval_game_number=1,
+    eval_game_number=10,
     total_episode_number=100,
     ray_mode="sync",
     eval_mode="env",  # env: 单个player在env中测试， dynamic：挑选对手，opponent_id:指定对手
@@ -45,7 +45,7 @@ eval_config = dict(
     evaluator_num=1,
 )
 if torch.cuda.is_available():
-    game_number = 1
+    game_number = 30
 else:
     game_number = 1
 
@@ -84,7 +84,7 @@ player_config = dict(
         action_config=dict(
             action_name="greedy_action",
             epsilon=1.0,
-            episode_count=75000,
+            episode_count=20000,
         ),
         feature_config="tensor_feature",
     ),
@@ -139,8 +139,8 @@ class MyLearner(Learner):
         self.build_games()
         self.build_trainers()
         self.init_games_weights()
-        # self.start_data_thread()
-        self.init_games_weights_from_file()
+        self.start_data_thread()
+        # self.init_games_weights_from_file()
 
     def init_games_weights_from_file(self):
         weights_path = "logs/league/p0_0_2021-05-30-20-44-26.pth"
@@ -195,11 +195,11 @@ if __name__ == "__main__":
     league = league_cls(league_config, register_handle=register_handle)
 
     learner = MyLearner(config, register_handle=register_handle)
-    p = learner.get_training_player()
-    league.add_player.remote(p)
-    # for i in range(50000000):
-    #     learner.step()
-    #     if i % 1 == 0:
-    #         p = learner.get_training_player()
-    #         league.add_player.remote(p)
+    # p = learner.get_training_player()
+    # league.add_player.remote(p)
+    for i in range(50000000):
+        learner.step()
+        if i % 20 == 0:
+            p = learner.get_training_player()
+            league.add_player.remote(p)
     time.sleep(100000)
