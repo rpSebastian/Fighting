@@ -95,7 +95,7 @@ player_config = dict(
         ),
     ),
     model_config=dict(
-        m0=dict(model_name="model:MLP", model_params=dict(in_dim=(144), out_dim=(40))),
+        m0=dict(model_name="model:Dueling", model_params=dict(in_dim=(144), out_dim=(40))),
     ),
 )
 league_config_dict = dict(
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     # league.add_player.remote(p)
     for i in range(50000000):
         learner.step()
-        if i % 20 == 0:
+        if i % 30 == 0:
             p = learner.get_training_player()
             league.add_player.remote(p)
     time.sleep(100000)
