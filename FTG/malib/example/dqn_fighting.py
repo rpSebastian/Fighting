@@ -27,7 +27,7 @@ data_config = dict(
         player_data=["feature", "obs", "model_out", "action"],
         other_data=["game_data", "reward"],
     ),
-    train_data_num=40960,
+    train_data_num=10240,
     tra_len=1,
     batch_size=1024,
     data_async=False,
@@ -45,7 +45,7 @@ eval_config = dict(
     evaluator_num=1,
 )
 if torch.cuda.is_available():
-    game_number = 30
+    game_number = 10
 else:
     game_number = 1
 
