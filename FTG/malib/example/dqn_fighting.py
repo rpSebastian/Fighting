@@ -28,7 +28,7 @@ data_config = dict(
         other_data=["game_data", "reward"],
     ),
     train_data_num=10240,
-    tra_len=1,
+    tra_len=3,
     batch_size=1024,
     data_async=False,
     data_capacity=200000,
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     # league.add_player.remote(p)
     for i in range(50000000):
         learner.step()
-        if i % 20 == 0:
+        if i % 30 == 0:
             p = learner.get_training_player()
             league.add_player.remote(p)
     time.sleep(100000)
