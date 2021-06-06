@@ -24,6 +24,7 @@ class DQNTrainer(Trainer):
         ].target_model_update_iter
         self.EPSILON = self.config.trainer_config[self.model_id].EPSILON
         self.GAMMA = self.config.trainer_config[self.model_id].GAMMA
+        self.TYPE = self.config.trainer_config[self.model_id].TYPE
         self.iteration_count = 0
 
     def _train_on_batch(self, data):
@@ -52,10 +53,15 @@ class DQNTrainer(Trainer):
             ac = ac.view(-1, 1)
             q_predict = self.model(f0)
             q_predict = q_predict.gather(1, ac)
-            q_next = self.target_model(f1).detach()
+
+            if (self.TYPE.find('DOUBLE')!=-1):
+                q_next = self.model(f1).detach() #DDQN
+            else:
+                q_next = self.target_model(f1).detach() #DQN
+
             max_q = q_next.max(1)[0]
             n_d = do == 0
-            q_next = max_q * n_d
+            q_next = max_q * n_d.float()
             q_target = re + self.GAMMA * q_next
             q_target = q_target.view(-1, 1)
             loss = self.loss_func(q_predict, q_target)
@@ -64,6 +70,12 @@ class DQNTrainer(Trainer):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+
+            if (self.TYPE.find('NOISY')!=-1):
+                # NoisyNet: reset noise
+                self.model.reset_noise()
+                self.target_model.reset_noise()
+
             self.iteration_count += 1
             if self.iteration_count % self.target_model_update_iter == 0:
                 self.update_target_model()
