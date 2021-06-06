@@ -30,6 +30,7 @@ class DQNTrainer(Trainer):
         ].target_model_update_iter
         self.EPSILON = self.config.trainer_config[self.model_id].EPSILON
         self.GAMMA = self.config.trainer_config[self.model_id].GAMMA
+        self.TYPE = self.config.trainer_config[self.model_id].TYPE
         self.iteration_count = 0
         self.n_steps = config.data_config.tra_len
         self.double = config.trainer_config[self.model_id].double
@@ -84,6 +85,12 @@ class DQNTrainer(Trainer):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+
+            if (self.TYPE.find('NOISY')!=-1):
+                # NoisyNet: reset noise
+                self.model.reset_noise()
+                self.target_model.reset_noise()
+
             self.iteration_count += 1
             if self.iteration_count % self.target_model_update_iter == 0:
                 self.update_target_model()
