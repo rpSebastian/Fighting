@@ -16,9 +16,11 @@ class GreedyAction(Action):
             self.episode_count = config.player_config[
                 self.player_id
             ].action_config.episode_count
+            self.epsilon_enable = config.player_config[self.player_id].action_config.epsilon_enable
         else:
             self.epsilon = config.action_config[agent_id].epsilon
             self.episode_count = config.action_config[agent_id].episode_count
+            self.epsilon_enable= config.action_config[agent_id].epsilon_enable
 
     def agent_action_train(self, model_out):
         pass
@@ -42,8 +44,9 @@ class GreedyAction(Action):
                     prob = prob * torch.tensor(mask[agent_id], dtype=torch.float32)
                 action_index = torch.argmax(prob)
                 action = action_index.item()
-            self.epsilon -= 1.0 / self.episode_count
-            self.epsilon = max(0.1, self.epsilon)
+            if(self.epsilon_enable==True):
+                self.epsilon -= 1.0 / self.episode_count
+                self.epsilon = max(0.1, self.epsilon)
             action_dict[agent_id] = action
         player_data_dict = {}
         player_data_dict["action"] = action_dict
