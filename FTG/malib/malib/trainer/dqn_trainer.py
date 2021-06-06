@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import torch
 import numpy as np
-
+import torch.nn.functional as F
 from malib.trainer import Trainer
 
 
@@ -19,7 +19,12 @@ class DQNTrainer(Trainer):
         )
         self.target_model = deepcopy(self.model)
         self.target_model.to(self.device)
-        self.loss_func = torch.nn.MSELoss()
+        
+        loss_func_dict = {
+            "MSELoss": torch.nn.MSELoss(),
+            "smooth_l1_loss": F.smooth_l1_loss
+        }
+        self.loss_func = loss_func_dict[self.config.trainer_config.loss_func]
         self.target_model_update_iter = self.config.trainer_config[
             self.model_id
         ].target_model_update_iter
@@ -27,6 +32,7 @@ class DQNTrainer(Trainer):
         self.GAMMA = self.config.trainer_config[self.model_id].GAMMA
         self.iteration_count = 0
         self.n_steps = config.data_config.tra_len
+        self.double = config.trainer_config[self.model_id].double
 
     def _calc_reward(self, tra_rewards):
         rewards = [tra_rewards[i] for i in range(self.n_steps)]
@@ -61,8 +67,13 @@ class DQNTrainer(Trainer):
             ac = ac.view(-1, 1)
             q_predict = self.model(f0)
             q_predict = q_predict.gather(1, ac)
-            q_next = self.target_model(f1).detach()
-            max_q = q_next.max(1)[0]
+            if self.double:
+                max_q = self.target_model(f1).gather(
+                    1, self.model(f1).argmax(dim=1, keepdim=True)
+                ).detach().squeeze()
+            else:
+                q_next = self.target_model(f1).detach()
+                max_q = q_next.max(1)[0]
             n_d = do == 0
             q_next = max_q * n_d
             q_target = re + np.power(self.GAMMA, self.n_steps) * q_next
