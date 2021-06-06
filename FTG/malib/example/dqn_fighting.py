@@ -27,8 +27,8 @@ data_config = dict(
         player_data=["feature", "obs", "model_out", "action"],
         other_data=["game_data", "reward"],
     ),
-    train_data_num=40960,
-    tra_len=1,
+    train_data_num=10240,
+    tra_len=1, # 控制 n_steps, 1 or 3
     batch_size=1024,
     data_async=False,
     data_capacity=200000,
@@ -45,7 +45,7 @@ eval_config = dict(
     evaluator_num=1,
 )
 if torch.cuda.is_available():
-    game_number = 30
+    game_number = 10
 else:
     game_number = 1
 
@@ -65,8 +65,10 @@ trainer_config = dict(
     use_gpu=torch.cuda.is_available(),
     gpu_num=1,
     trainer_mode="local",
+    loss_func="MSELoss", # 控制损失函数 MSELoss or smooth_l1_loss
     m0=dict(
         trainer_number=1,
+        double=False, # Double DQN
         trainer_name="trainer:DQNTrainer",
         lr=0.001,
         target_model_update_iter=30,
@@ -96,6 +98,7 @@ player_config = dict(
     ),
     model_config=dict(
         m0=dict(model_name="model:MLP", model_params=dict(in_dim=(144), out_dim=(40))),
+        # 控制模型 MLP Dueling
     ),
 )
 league_config_dict = dict(
@@ -199,7 +202,7 @@ if __name__ == "__main__":
     # league.add_player.remote(p)
     for i in range(50000000):
         learner.step()
-        if i % 20 == 0:
+        if i % 30 == 0:
             p = learner.get_training_player()
             league.add_player.remote(p)
     time.sleep(100000)
