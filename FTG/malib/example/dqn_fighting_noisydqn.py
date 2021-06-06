@@ -1,6 +1,3 @@
-from warnings import simplefilter
-simplefilter(action='ignore', category=FutureWarning)
-
 import random
 import sys
 import time
@@ -18,8 +15,6 @@ from malib.utils import regist, register_init
 from malib.action import GreedyAction
 from malib.feature import TensorFeature
 
-
-
 ray.init()
 # ray.init(address="auto")
 
@@ -32,9 +27,9 @@ data_config = dict(
         player_data=["feature", "obs", "model_out", "action"],
         other_data=["game_data", "reward"],
     ),
-    train_data_num=64,#40960,1024,
+    train_data_num=10240,
     tra_len=1,
-    batch_size=32,
+    batch_size=1024,
     data_async=False,
     data_capacity=200000,
     data_sample_mode="USWR",
@@ -77,6 +72,7 @@ trainer_config = dict(
         target_model_update_iter=30,
         EPSILON=0.9,
         GAMMA=0.9,
+        TYPE='NOISY',
         # training_procedure= train_on_batch,
     ),
 )
@@ -88,8 +84,9 @@ player_config = dict(
         agents=["a0"],
         action_config=dict(
             action_name="greedy_action",
-            epsilon=1.0,
+            epsilon=-1,
             episode_count=20000,
+            epsilon_enable=False,
         ),
         feature_config="tensor_feature",
     ),
@@ -100,7 +97,6 @@ player_config = dict(
         ),
     ),
     model_config=dict(
-        #m0=dict(model_name="model:MLP", model_params=dict(in_dim=(144), out_dim=(40))),
         m0=dict(model_name="model:Noisy", model_params=dict(in_dim=(144), out_dim=(40))),
     ),
 )
@@ -161,7 +157,6 @@ class MyLearner(Learner):
         self.sync_weights(result)
 
     def learning_procedure(self, learner=None):
-        print(time.time())
         t0 = time.time()
         data = self.ask_for_data(min_episode_count=0)
         t1 = time.time()
@@ -206,7 +201,7 @@ if __name__ == "__main__":
     # league.add_player.remote(p)
     for i in range(50000000):
         learner.step()
-        if i % 20 == 0:
+        if i % 30 == 0:
             p = learner.get_training_player()
             league.add_player.remote(p)
     time.sleep(100000)
