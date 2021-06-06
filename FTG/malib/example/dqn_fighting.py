@@ -28,7 +28,7 @@ data_config = dict(
         other_data=["game_data", "reward"],
     ),
     train_data_num=10240,
-    tra_len=1,
+    tra_len=1, # 控制 n_steps, 1 or 3
     batch_size=1024,
     data_async=False,
     data_capacity=200000,
@@ -65,8 +65,10 @@ trainer_config = dict(
     use_gpu=torch.cuda.is_available(),
     gpu_num=1,
     trainer_mode="local",
+    loss_func="MSELoss", # 控制损失函数 MSELoss or smooth_l1_loss
     m0=dict(
         trainer_number=1,
+        double=False, # Double DQN
         trainer_name="trainer:DQNTrainer",
         lr=0.001,
         target_model_update_iter=30,
@@ -95,7 +97,8 @@ player_config = dict(
         ),
     ),
     model_config=dict(
-        m0=dict(model_name="model:Dueling", model_params=dict(in_dim=(144), out_dim=(40))),
+        m0=dict(model_name="model:MLP", model_params=dict(in_dim=(144), out_dim=(40))),
+        # 控制模型 MLP Dueling
     ),
 )
 league_config_dict = dict(
