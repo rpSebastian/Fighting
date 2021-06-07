@@ -68,12 +68,13 @@ trainer_config = dict(
     loss_func="MSELoss", # 控制损失函数 MSELoss or smooth_l1_loss
     m0=dict(
         trainer_number=1,
-        double=False, # Double DQN
+        double=True, # Double DQN
         trainer_name="trainer:DQNTrainer",
         lr=0.001,
         target_model_update_iter=30,
         EPSILON=0.9,
         GAMMA=0.9,
+        TYPE='NOISY',
         # training_procedure= train_on_batch,
     ),
 )
@@ -85,8 +86,9 @@ player_config = dict(
         agents=["a0"],
         action_config=dict(
             action_name="greedy_action",
-            epsilon=1.0,
+            epsilon=-1,
             episode_count=20000,
+            epsilon_enable=False
         ),
         feature_config="tensor_feature",
     ),
@@ -97,7 +99,7 @@ player_config = dict(
         ),
     ),
     model_config=dict(
-        m0=dict(model_name="model:MLP", model_params=dict(in_dim=(144), out_dim=(40))),
+        m0=dict(model_name="model:DuelingNoisy", model_params=dict(in_dim=(144), out_dim=(40))),
         # 控制模型 MLP Dueling
     ),
 )
