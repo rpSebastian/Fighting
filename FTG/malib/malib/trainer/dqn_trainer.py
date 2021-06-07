@@ -19,7 +19,6 @@ class DQNTrainer(Trainer):
         )
         self.target_model = deepcopy(self.model)
         self.target_model.to(self.device)
-        
         loss_func_dict = {
             "MSELoss": torch.nn.MSELoss(),
             "smooth_l1_loss": F.smooth_l1_loss
@@ -30,10 +29,10 @@ class DQNTrainer(Trainer):
         ].target_model_update_iter
         self.EPSILON = self.config.trainer_config[self.model_id].EPSILON
         self.GAMMA = self.config.trainer_config[self.model_id].GAMMA
-        self.TYPE = self.config.trainer_config[self.model_id].TYPE
-        self.iteration_count = 0
+        self.noisy = self.config.player_config.model_config[self.model_id].model_params["noisy"]
         self.n_steps = config.data_config.tra_len
         self.double = config.trainer_config[self.model_id].double
+        self.iteration_count = 0
 
     def _calc_reward(self, tra_rewards):
         rewards = [tra_rewards[i] for i in range(self.n_steps)]
@@ -86,7 +85,7 @@ class DQNTrainer(Trainer):
             loss.backward()
             self.optimizer.step()
 
-            if (self.TYPE.find('NOISY')!=-1):
+            if self.noisy:
                 # NoisyNet: reset noise
                 self.model.reset_noise()
                 self.target_model.reset_noise()

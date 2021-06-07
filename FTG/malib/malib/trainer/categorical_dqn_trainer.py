@@ -1,15 +1,16 @@
 from copy import deepcopy
 
 import torch
-
+import numpy as np
+import torch.nn.functional as F
 from malib.trainer import Trainer
 
 
-class Categorical_Dqn(Trainer):
+class CategoricalDQNTrainer(Trainer):
     def __init__(
         self, config, player_id, model_id=None, trainer_index=0, register_handle=None
     ):
-        super(Categorical_Dqn, self).__init__(
+        super(CategoricalDQNTrainer, self).__init__(
             config,
             player_id,
             trainer_index,
@@ -18,20 +19,32 @@ class Categorical_Dqn(Trainer):
         )
         self.target_model = deepcopy(self.model)
         self.target_model.to(self.device)
-        self.loss_func = torch.nn.MSELoss()
+        loss_func_dict = {
+            "MSELoss": torch.nn.MSELoss(),
+            "smooth_l1_loss": F.smooth_l1_loss
+        }
+        self.loss_func = loss_func_dict[self.config.trainer_config.loss_func]
         self.target_model_update_iter = self.config.trainer_config[
             self.model_id
         ].target_model_update_iter
         self.EPSILON = self.config.trainer_config[self.model_id].EPSILON
         self.GAMMA = self.config.trainer_config[self.model_id].GAMMA
+        self.noisy = self.config.player_config.model_config[self.model_id].model_params["noisy"]
         self.v_max = self.config.player_config.model_config[self.model_id].model_params["v_max"]
         self.v_min = self.config.player_config.model_config[self.model_id].model_params["v_min"]
         self.atom_size = self.config.player_config.model_config[self.model_id].model_params["atom_size"]
         self.support = torch.linspace(self.v_min, self.v_max, self.atom_size).to(self.device)
-
-        self.batch_size=self.config.data_config.batch_size
-
+        self.n_steps = config.data_config.tra_len
+        self.double = config.trainer_config[self.model_id].double
+        self.batch_size = self.config.data_config.batch_size
         self.iteration_count = 0
+    
+    def _calc_reward(self, tra_rewards):
+        rewards = [tra_rewards[i] for i in range(self.n_steps)]
+        n_step_return = 0
+        for r in reversed(rewards):
+            n_step_return = n_step_return * self.GAMMA + r
+        return n_step_return
 
     def _train_on_batch(self, data):
         # self.update_target_model()
@@ -39,10 +52,10 @@ class Categorical_Dqn(Trainer):
         # print("DQN train on batch")
         feature_list = data.feature
         fea0 = [f[0] for f in feature_list]
-        fea1 = [f[1] for f in feature_list]
+        fea1 = [f[self.n_steps] for f in feature_list]
         action = [a[0] for a in data.action]
-        reward = [gd[0]["reward"] for gd in data.game_data]
-        done = [gd[0]["done"] for gd in data.game_data]
+        reward = [self._calc_reward(r) for r in data.reward] 
+        done = [gd[self.n_steps - 1]["done"] for gd in data.game_data]
         dataset = data.make_dataset([fea0, fea1, action, done, reward])
         loss_info = []
         for d in dataset:
@@ -62,11 +75,14 @@ class Categorical_Dqn(Trainer):
             delta_z = float(self.v_max - self.v_min) / (self.atom_size - 1)
 
             with torch.no_grad():
-                next_action = self.target_model(f1).argmax(1) # [B]
+                if self.double:
+                    next_action = self.model(f1).argmax(1) # [B]
+                else:
+                    next_action = self.target_model(f1).argmax(1) # [B]
                 next_dist = self.target_model.dist(f1) # [B, A, D]
                 next_dist = next_dist[range(self.batch_size), next_action] # [B, D]
 
-                t_z = re + (1 - do) * self.GAMMA * self.support
+                t_z = re + (1 - do) * np.power(self.GAMMA, self.n_steps) * self.support
                 t_z = t_z.clamp(min=self.v_min, max=self.v_max)
                 b = (t_z - self.v_min) / delta_z
                 l = b.floor().long()
@@ -99,6 +115,12 @@ class Categorical_Dqn(Trainer):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+
+            if self.noisy:
+                # NoisyNet: reset noise
+                self.model.reset_noise()
+                self.target_model.reset_noise()
+            
             self.iteration_count += 1
             if self.iteration_count % self.target_model_update_iter == 0:
                 self.update_target_model()

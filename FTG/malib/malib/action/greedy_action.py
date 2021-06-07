@@ -31,7 +31,7 @@ class GreedyAction(Action):
     def player_action_train(self, model_out: dict, mask=None):
         action_dict = {}
         for agent_id, agent_model_out in model_out.items():
-            if np.random.rand() < self.epsilon:
+            if self.episilon_enable and (np.random.rand() < self.epsilon):
                 if mask:
                     avail_actions_ind = np.nonzero(mask[agent_id])[0]
                     action = np.random.choice(avail_actions_ind)
@@ -44,7 +44,7 @@ class GreedyAction(Action):
                     prob = prob * torch.tensor(mask[agent_id], dtype=torch.float32)
                 action_index = torch.argmax(prob)
                 action = action_index.item()
-            if(self.epsilon_enable==True):
+            if self.epsilon_enable:
                 self.epsilon -= 1.0 / self.episode_count
                 self.epsilon = max(0.1, self.epsilon)
             action_dict[agent_id] = action
