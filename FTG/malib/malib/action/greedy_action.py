@@ -31,7 +31,7 @@ class GreedyAction(Action):
     def player_action_train(self, model_out: dict, mask=None):
         action_dict = {}
         for agent_id, agent_model_out in model_out.items():
-            if self.episilon_enable and (np.random.rand() < self.epsilon):
+            if self.epsilon_enable and (np.random.rand() < self.epsilon):
                 if mask:
                     avail_actions_ind = np.nonzero(mask[agent_id])[0]
                     action = np.random.choice(avail_actions_ind)

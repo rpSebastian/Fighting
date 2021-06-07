@@ -56,11 +56,11 @@ class Categorical(TorchModel):
 
 
     def forward(self, x):
-        feature = self.feature_layer(x)
-        dist = self.dist(feature)
+        dist = self.dist(x)
         q = torch.sum(dist * self.support, dim=2).squeeze()
 
         if self.dueling:
+            feature = self.feature_layer(x)
             value = self.value_layer(feature)
             q = value + q - q.mean(dim=-1, keepdim=True)
 
@@ -68,12 +68,13 @@ class Categorical(TorchModel):
 
     def dist(self, x: torch.Tensor) -> torch.Tensor:
         """Get distribution for atoms."""
-        q_atoms = self.q_dist_layer(x).view(-1, self.out_dim, self.atom_size)
+        feature = self.feature_layer(x)
+        q_atoms = self.q_dist_layer(feature).view(-1, self.out_dim, self.atom_size)
         dist = F.softmax(q_atoms, dim=-1)
         dist = dist.clamp(min=1e-3)  # for avoiding nans
         return dist
 
-    def reset_noisy(self):
+    def reset_noise(self):
         for noisy_layer in self.noisy_layers:
             noisy_layer.reset_noise()
 
