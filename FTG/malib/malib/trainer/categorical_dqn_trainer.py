@@ -24,9 +24,9 @@ class Categorical_Dqn(Trainer):
         ].target_model_update_iter
         self.EPSILON = self.config.trainer_config[self.model_id].EPSILON
         self.GAMMA = self.config.trainer_config[self.model_id].GAMMA
-        self.v_max = self.config.trainer_config[self.model_id].v_max
-        self.v_min = self.config.trainer_config[self.model_id].v_min
-        self.atom_size = self.config.trainer_config[self.model_id].atom_size
+        self.v_max = self.config.player_config.model_config[self.model_id].model_params["v_max"]
+        self.v_min = self.config.player_config.model_config[self.model_id].model_params["v_min"]
+        self.atom_size = self.config.player_config.model_config[self.model_id].model_params["atom_size"]
         self.support = torch.linspace(self.v_min, self.v_max, self.atom_size).to(self.device)
 
         self.batch_size=self.config.data_config.batch_size
@@ -62,9 +62,9 @@ class Categorical_Dqn(Trainer):
             delta_z = float(self.v_max - self.v_min) / (self.atom_size - 1)
 
             with torch.no_grad():
-                next_action = self.target_model(f1).argmax(1)
-                next_dist = self.target_model.dist(f1)
-                next_dist = next_dist[range(self.batch_size), next_action]
+                next_action = self.target_model(f1).argmax(1) # [B]
+                next_dist = self.target_model.dist(f1) # [B, A, D]
+                next_dist = next_dist[range(self.batch_size), next_action] # [B, D]
 
                 t_z = re + (1 - do) * self.GAMMA * self.support
                 t_z = t_z.clamp(min=self.v_min, max=self.v_max)
@@ -90,8 +90,8 @@ class Categorical_Dqn(Trainer):
                 )
 
             dist = self.model.dist(f0)
-            log_p = torch.log(dist[range(self.batch_size), ac])
-
+            action = ac.squeeze()
+            log_p = torch.log(dist[range(self.batch_size), action])
             loss = -(proj_dist * log_p).sum(1).mean()
 
             loss = loss.float()

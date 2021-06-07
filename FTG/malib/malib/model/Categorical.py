@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from malib.model import TorchModel
 
 class Categorical(TorchModel):
-    def __init__(self, in_dim, out_dim, v_min,v_max,atom_size,hidden_dim=256, device: str = "cpu") -> None:
+    def __init__(self, in_dim, out_dim, v_min,v_max, atom_size,hidden_dim=256, device: str = "cpu") -> None:
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -28,8 +28,7 @@ class Categorical(TorchModel):
 
     def forward(self, x):
         dist = self.dist(x)
-        q = torch.sum(dist * self.support, dim=2)
-        
+        q = torch.sum(dist * self.support, dim=2).squeeze()
         return q
 
     def dist(self, x: torch.Tensor) -> torch.Tensor:
@@ -39,4 +38,14 @@ class Categorical(TorchModel):
         dist = dist.clamp(min=1e-3)  # for avoiding nans
         
         return dist
-    
+
+if __name__ == "__main__":
+    import torch
+
+    a = torch.zeros((12))
+    m = Categorical(12, 4, 5, 10, 10)
+    m2 = Categorical(12, 4, 5, 10, 10)
+    y = m(a)
+    print(y.shape)
+    w = m.get_weights()
+    m2.set_weights(w)

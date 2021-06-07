@@ -1,6 +1,7 @@
 import random
 import sys
 import time
+import pickle
 
 import numpy as np
 import ray
@@ -26,32 +27,32 @@ data_config = dict(
         player_data=["feature", "obs", "model_out", "action"],
         other_data=["game_data", "reward"],
     ),
-    train_data_num=256,
-    tra_len=1,
-    batch_size=128,
+    train_data_num=10240,
+    tra_len=1, # 控制 n_steps, 1 or 3
+    batch_size=10240,
     data_async=False,
-    data_capacity=2000,
+    data_capacity=200000,
     data_sample_mode="USWR",
 )
 eval_config = dict(
     config_name="eval_config",
-    eval_game_number=1,
+    eval_game_number=10,
     total_episode_number=100,
     ray_mode="sync",
     eval_mode="env",  # env: 单个player在env中测试， dynamic：挑选对手，opponent_id:指定对手
-    env_name="cartpole_v0",
+    env_name="fighting",
     players=["p0"],
     evaluator_num=1,
 )
 if torch.cuda.is_available():
-    game_number = 5
+    game_number = 10
 else:
-    game_number = 2
+    game_number = 1
 
 learner_config = dict(
     config_name="learner_config",
     game_number=game_number,
-    env_name="cartpole_v0",
+    env_name="fighting",
     player_id="p0",
     local_data=True,
     learn_model_id=["m0"],
@@ -64,16 +65,16 @@ trainer_config = dict(
     use_gpu=torch.cuda.is_available(),
     gpu_num=1,
     trainer_mode="local",
-    loss_func="MSELoss",
+    loss_func="MSELoss", # 控制损失函数 MSELoss or smooth_l1_loss
     m0=dict(
         trainer_number=1,
-        trainer_name="trainer:DQNTrainer",
+        double=True, # Double DQN
+        trainer_name="trainer:Categorical_Dqn",
         lr=0.001,
         target_model_update_iter=30,
         EPSILON=0.9,
         GAMMA=0.9,
-        double=False,
-        TYPE="None",
+        TYPE='NOISY',
         # training_procedure= train_on_batch,
     ),
 )
@@ -85,8 +86,8 @@ player_config = dict(
         agents=["a0"],
         action_config=dict(
             action_name="greedy_action",
-            epsilon=1.0,
-            episode_count=100000,
+            epsilon=1,
+            episode_count=20000,
             epsilon_enable=True
         ),
         feature_config="tensor_feature",
@@ -98,19 +99,28 @@ player_config = dict(
         ),
     ),
     model_config=dict(
-        m0=dict(model_name="model:MLP", model_params=dict(in_dim=(4), out_dim=(2))),
+        m0=dict(model_name="model:Categorical", model_params=dict(
+            in_dim=(144), 
+            out_dim=(40),
+            hidden_dim=512,
+            v_min=0,
+            v_max=8,
+            atom_size=30,
+        )),
+        # 控制模型 MLP Dueling
     ),
 )
 league_config_dict = dict(
     config_name="league_config",
     eval_players=["p0"],
     eval_auto=True,
-    auto_save=False,
+    auto_save=True,
     standings_mode=[
         "reward",
         "winrate",
+        "hpdiff"
     ],  # reward:compute the reward,score：compute the score， winrate:compute the winrate
-    env_name="cartpole_v0",
+    env_name="fighting",
     workdir="logs/league",
 )
 
@@ -141,27 +151,50 @@ class MyLearner(Learner):
         self.build_games()
         self.build_trainers()
         self.init_games_weights()
-        # self.start_data_thread()
+        self.start_data_thread()
+        # self.init_games_weights_from_file()
+
+    def init_games_weights_from_file(self):
+        weights_path = "logs/league/p0_0_2021-05-30-20-44-26.pth"
+        with open(weights_path, "rb") as f:
+            info = pickle.load(f)
+            weights = info["m0"]
+        result = {}
+        result["train_result"] = {}
+        result["train_result"]["weights"] = weights
+        result["player_id"] = "p0"
+        result["model_id"] = "m0"
+        self.sync_weights(result)
 
     def learning_procedure(self, learner=None):
         t0 = time.time()
-        data = self.ask_for_data(min_episode_count=10)
+        data = self.ask_for_data(min_episode_count=0)
         t1 = time.time()
         result = self.learn_on_data(data)
         t2 = time.time()
-
         self.sync_weights(result)
         t3 = time.time()
         game_last_info = self.get_game_info()
+        
         game_reward = [g_data["info"]["episode_reward"] for g_data in game_last_info]
         mean_reward1 = np.mean(game_reward)
-        self.logger.add_scalar("p0/reward", mean_reward1, self.learn_step_number)
-        t4 = time.time()
+        game_hp_diff = [g_data["info"]["hp_diff"] for g_data in game_last_info]
+        mean_hp_diff = np.mean(game_hp_diff)
+        game_win_result = [g_data["info"]["win_result"]["p0"] for g_data in game_last_info]
+        win_rate = np.mean(game_win_result)
 
+
+        self.logger.add_scalar("p0/reward", mean_reward1, self.learn_step_number)
+        self.logger.add_scalar("p0/hp_diff", mean_hp_diff, self.learn_step_number)
+        self.logger.add_scalar("p0/win_rate", win_rate, self.learn_step_number)
+        t4 = time.time()
+        logger.info("{} {} {} ".format(t1 - t0, t2 - t1, t3 - t2))
+        g0 = game_last_info[0]["info"]
+        logger.info("step_num: {} own hp: {} opp hp: {}".format(g0["step_num"], g0["own_hp"], g0["opp_hp"]))
         logger.info(
             [
-                "learner step number:{},train reward:{}".format(
-                    self.learn_step_number, mean_reward1
+                "learner step number:{},train reward:{}, hp diff:{}, win rate: {}, epsilon: {}".format(
+                    self.learn_step_number, mean_reward1, mean_hp_diff, win_rate, self.get_epsilon()
                 )
             ]
         )
@@ -174,10 +207,11 @@ if __name__ == "__main__":
     league = league_cls(league_config, register_handle=register_handle)
 
     learner = MyLearner(config, register_handle=register_handle)
-    for i in range(5000):
+    # p = learner.get_training_player()
+    # league.add_player.remote(p)
+    for i in range(50000000):
         learner.step()
-
-        if i % 3 == 0:
+        if i % 30 == 0:
             p = learner.get_training_player()
             league.add_player.remote(p)
     time.sleep(100000)

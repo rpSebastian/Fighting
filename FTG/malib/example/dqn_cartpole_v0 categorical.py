@@ -67,7 +67,7 @@ trainer_config = dict(
     loss_func="MSELoss",
     m0=dict(
         trainer_number=1,
-        trainer_name="trainer:DQNTrainer",
+        trainer_name="trainer:Categorical_Dqn",
         lr=0.001,
         target_model_update_iter=30,
         EPSILON=0.9,
@@ -98,7 +98,14 @@ player_config = dict(
         ),
     ),
     model_config=dict(
-        m0=dict(model_name="model:MLP", model_params=dict(in_dim=(4), out_dim=(2))),
+        m0=dict(model_name="model:Categorical", model_params=dict(
+            in_dim=(4), 
+            out_dim=(2),
+            hidden_dim=256,
+            v_min=0,
+            v_max=10,
+            atom_size=40,
+        )),
     ),
 )
 league_config_dict = dict(
