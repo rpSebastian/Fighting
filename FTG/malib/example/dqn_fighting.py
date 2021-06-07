@@ -100,7 +100,7 @@ player_config = dict(
     model_config=dict(
         # m0=dict(model_name="model:MLP", model_params=dict(
         #     in_dim=(144), 
-        #     out_dim=(40)),
+        #     out_dim=(40),
         #     hidden_dim=256,
         #     noisy=False,
         #     dueling=False

@@ -62,7 +62,7 @@ class MLP(TorchModel):
             q = value + q - q.mean(dim=-1, keepdim=True)
         return q
 
-    def reset_noisy(self):
+    def reset_noise(self):
         for noisy_layer in self.noisy_layers:
             noisy_layer.reset_noise()
 
