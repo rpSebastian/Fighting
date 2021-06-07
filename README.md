@@ -26,7 +26,7 @@ tensorboard --logdir ./logs --reload_multifile True
 
 * N-step Learning。  修改 data_config 中的 tra_len=1 / 3
 * Double DQN。   修改 trainer_config 中的 double=True / False
-* NoisyNet。  修改 player_config 中的 noisy=True / False
+* NoisyNet。  修改 player_config 中的 noisy=True / False, player_config 中的 epsilon_enable=False / True
 * Loss。  修改 trainer_config 中的 trainer_config=MSELoss / smooth_l1_loss
 * Dueling DQN. 修改 player_config 中的 dueling=True / False
 * Categorical DQN. 修改 trainer_config 中的 trainer_name=CategoricalDQNTrainer / DQNTrainer, model_config中的模型为 Categorical / MLP
