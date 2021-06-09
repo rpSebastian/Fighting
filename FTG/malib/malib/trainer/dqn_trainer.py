@@ -41,45 +41,61 @@ class DQNTrainer(Trainer):
             n_step_return = n_step_return * self.GAMMA + r
         return n_step_return
 
+    def _calc_loss(self, f0, f1, ac, do, re):
+        re = re.float()
+        # f0,f1,do,re=f0.float(),f1.float(),do.float(),re.float()
+        ac = ac.view(-1, 1)
+        q_predict = self.model(f0)
+        q_predict = q_predict.gather(1, ac)
+        if self.double:
+            max_q = self.target_model(f1).gather(
+                1, self.model(f1).argmax(dim=1, keepdim=True)
+            ).detach().squeeze()
+        else:
+            q_next = self.target_model(f1).detach()
+            max_q = q_next.max(1)[0]
+        n_d = do == 0
+        q_next = max_q * n_d
+        q_target = re + np.power(self.GAMMA, self.n_steps) * q_next
+        q_target = q_target.view(-1, 1)
+        loss = self.loss_func(q_predict, q_target)
+        loss = loss.float()
+        return loss
+
     def _train_on_batch(self, data):
         # self.update_target_model()
         # self.target_model_update_iter+=1
         # print("DQN train on batch")
         feature_list = data.feature
         fea0 = [f[0] for f in feature_list]
-        fea1 = [f[self.n_steps] for f in feature_list]
+        fea1 = [f[1] for f in feature_list]
+        fean = [f[self.n_steps] for f in feature_list]
         action = [a[0] for a in data.action]
-        reward = [self._calc_reward(r) for r in data.reward] 
-        done = [gd[self.n_steps - 1]["done"] for gd in data.game_data]
-        dataset = data.make_dataset([fea0, fea1, action, done, reward])
+        reward = [r[0] for r in data.reward]
+        rewardn = [self._calc_reward(r) for r in data.reward]
+        done = [gd[0]["done"] for gd in data.game_data]
+        donen = [gd[self.n_steps - 1]["done"] for gd in data.game_data]
+        dataset = data.make_dataset([fea0, fea1, fean, action, done, donen, reward, rewardn])
         loss_info = []
         for d in dataset:
-            f0, f1, ac, do, re = d
-            f0, f1, ac, do, re = (
+            f0, f1, fn, ac, do, don, re, ren = d
+            f0, f1, fn, ac, do, don, re, ren = (
                 f0.to(self.device),
                 f1.to(self.device),
+                fn.to(self.device),
                 ac.to(self.device),
                 do.to(self.device),
+                don.to(self.device),
                 re.to(self.device),
+                ren.to(self.device),
             )
-            re = re.float()
-            # f0,f1,do,re=f0.float(),f1.float(),do.float(),re.float()
-            ac = ac.view(-1, 1)
-            q_predict = self.model(f0)
-            q_predict = q_predict.gather(1, ac)
-            if self.double:
-                max_q = self.target_model(f1).gather(
-                    1, self.model(f1).argmax(dim=1, keepdim=True)
-                ).detach().squeeze()
-            else:
-                q_next = self.target_model(f1).detach()
-                max_q = q_next.max(1)[0]
-            n_d = do == 0
-            q_next = max_q * n_d
-            q_target = re + np.power(self.GAMMA, self.n_steps) * q_next
-            q_target = q_target.view(-1, 1)
-            loss = self.loss_func(q_predict, q_target)
-            loss = loss.float()
+            
+            loss = self._calc_loss(f0, f1, ac, do, re)
+
+            if self.n_steps > 1:
+                loss_n = self._calc_loss(f0, fn, ac, don, ren)
+                loss += loss_n    
+
             loss_info.append(loss.item())
             self.optimizer.zero_grad()
             loss.backward()
