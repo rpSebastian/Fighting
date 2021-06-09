@@ -33,7 +33,11 @@ class CategoricalDQNTrainer(Trainer):
         self.v_max = self.config.player_config.model_config[self.model_id].model_params["v_max"]
         self.v_min = self.config.player_config.model_config[self.model_id].model_params["v_min"]
         self.atom_size = self.config.player_config.model_config[self.model_id].model_params["atom_size"]
-        self.support = torch.linspace(self.v_min, self.v_max, self.atom_size).to(self.device)
+        self.support = torch.cat([
+            torch.linspace(self.v_min, self.v_min / 2 - 0.2, self.atom_size // 8), 
+            torch.linspace(self.v_min / 2 + 0.2, self.v_max / 2 - 0.2, self.atom_size // 8 * 6), 
+            torch.linspace(self.v_max / 2 + 0.2, self.v_max, self.atom_size // 8)
+        ]).to(self.device)
         self.n_steps = config.data_config.tra_len
         self.double = config.trainer_config[self.model_id].double
         self.batch_size = self.config.data_config.batch_size

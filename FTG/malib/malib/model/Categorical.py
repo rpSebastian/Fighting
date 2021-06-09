@@ -17,7 +17,11 @@ class Categorical(TorchModel):
         self.noisy = noisy
         self.dueling = dueling
         self.atom_size = atom_size
-        self.support = torch.linspace(v_min, v_max, atom_size).to(device)
+        self.support = torch.cat([
+            torch.linspace(v_min, v_min / 2 - 0.2, atom_size // 8), 
+            torch.linspace(v_min / 2 + 0.2, v_max / 2 - 0.2, atom_size // 8 * 6), 
+            torch.linspace(v_max / 2 + 0.2, v_max, atom_size // 8)
+        ]).to(self.device)
 
         if noisy:
             linear_layer = NoisyLinear
