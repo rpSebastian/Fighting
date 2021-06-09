@@ -44,7 +44,7 @@ class Categorical(TorchModel):
 
         if dueling:
             linear_layer3 = linear_layer(self.hidden_dim, self.hidden_dim)
-            linear_layer4 = linear_layer(self.hidden_dim, 1)
+            linear_layer4 = linear_layer(self.hidden_dim, self.atom_size)
             self.value_layer = nn.Sequential(
                 linear_layer3,
                 nn.ReLU(), 
@@ -59,17 +59,17 @@ class Categorical(TorchModel):
         dist = self.dist(x)
         q = torch.sum(dist * self.support, dim=2).squeeze()
 
-        if self.dueling:
-            feature = self.feature_layer(x)
-            value = self.value_layer(feature)
-            q = value + q - q.mean(dim=-1, keepdim=True)
-
         return q
 
     def dist(self, x: torch.Tensor) -> torch.Tensor:
         """Get distribution for atoms."""
         feature = self.feature_layer(x)
         q_atoms = self.q_dist_layer(feature).view(-1, self.out_dim, self.atom_size)
+
+        if self.dueling:
+            value = self.value_layer(feature).view(-1, 1, self.atom_size)
+            q_atoms = value + q_atoms - q_atoms.mean(dim=-1, keepdim=True)
+
         dist = F.softmax(q_atoms, dim=-1)
         dist = dist.clamp(min=1e-3)  # for avoiding nans
         return dist
