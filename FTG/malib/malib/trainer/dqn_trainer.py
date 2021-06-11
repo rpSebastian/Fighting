@@ -41,7 +41,7 @@ class DQNTrainer(Trainer):
             n_step_return = n_step_return * self.GAMMA + r
         return n_step_return
 
-    def _calc_loss(self, f0, f1, ac, do, re):
+    def _calc_loss(self, f0, f1, ac, do, re, n_steps):
         re = re.float()
         # f0,f1,do,re=f0.float(),f1.float(),do.float(),re.float()
         ac = ac.view(-1, 1)
@@ -56,7 +56,7 @@ class DQNTrainer(Trainer):
             max_q = q_next.max(1)[0]
         n_d = do == 0
         q_next = max_q * n_d
-        q_target = re + np.power(self.GAMMA, self.n_steps) * q_next
+        q_target = re + np.power(self.GAMMA, n_steps) * q_next
         q_target = q_target.view(-1, 1)
         loss = self.loss_func(q_predict, q_target)
         loss = loss.float()
@@ -90,10 +90,10 @@ class DQNTrainer(Trainer):
                 ren.to(self.device),
             )
             
-            loss = self._calc_loss(f0, f1, ac, do, re)
+            loss = self._calc_loss(f0, f1, ac, do, re, 1)
 
             if self.n_steps > 1:
-                loss_n = self._calc_loss(f0, fn, ac, don, ren)
+                loss_n = self._calc_loss(f0, fn, ac, don, ren, self.n_steps)
                 loss += loss_n    
 
             loss_info.append(loss.item())
